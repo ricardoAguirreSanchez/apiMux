@@ -21,7 +21,7 @@ PD: es necesario dejar los metodos con MAYUSCULA para que sean publicos
 type Documento struct{  //los atributos publicos
 	Id string `json:"id"`
 	Titulo string `json:"titulo"`
-	Descripcion string `jso : n:"descripcion"`
+	Descripcion string `json:"descripcion"`
 }
 
 func init(){
@@ -59,8 +59,10 @@ func SerchInDocument(id string,word string) string{
 			log.Fatalf("No se pudo recuperar el archivo error : %v", err)
 			return "No encontrado!"
 	}
-	log.Println(r.MimeType)
-	log.Println(r.FileExtension)
+	log.Println("El mimeType del archivo buscado es: " + r.MimeType)
+	if r.FullFileExtension != "" {
+		log.Println("Tiene extension: " + r.FullFileExtension)
+	}
 	return "Encontrado!"
 	
 

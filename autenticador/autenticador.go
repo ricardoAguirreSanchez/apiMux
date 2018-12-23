@@ -125,7 +125,6 @@ func GetEstadoAutenticacion() string{//Se escribe en mayuscula por ser publico
 		tok, err := tokenFromFile(tokFile)
 		if err != nil {
 			//hay q logear !!
-			log.Println(tok)
 			authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 			var url string
 			url = authURL
@@ -133,6 +132,7 @@ func GetEstadoAutenticacion() string{//Se escribe en mayuscula por ser publico
 			return url
 		}else{
 			//el token ya lo tenemos!!!!!
+			log.Print("Ya tenemos el token ")
 			log.Println(tok)
 			return "AUTENTICADO"
 		}
