@@ -7,7 +7,7 @@ import (
 	"google.golang.org/api/drive/v3"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-
+	"strings"
 	"encoding/json"
     "os"
 		
@@ -59,11 +59,18 @@ func SerchInDocument(id string,word string) string{
 			log.Fatalf("No se pudo recuperar el archivo error : %v", err)
 			return "No encontrado!"
 	}
+
 	log.Println("El mimeType del archivo buscado es: " + r.MimeType)
-	if r.FullFileExtension != "" {
-		log.Println("Tiene extension: " + r.FullFileExtension)
+	
+	//por ahora el word lo busca en el mimetype
+	if strings.Contains(r.MimeType, word){
+		log.Println("Existe la palabra en el archivo!")
+		return "Encontrado!"
+	}else{
+		log.Println("No existe la palabra en el archivo :(")
+		return "No encontrado!"
 	}
-	return "Encontrado!"
+	
 	
 
 }
