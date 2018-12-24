@@ -47,6 +47,25 @@ func OauthHandler(w http.ResponseWriter , r *http.Request){
 	}
 }
 
+
+// GET 
+func GetListHandler(w http.ResponseWriter , r *http.Request){
+	estado := autenticador.GetEstadoAutenticacion()
+	if estado != "AUTENTICADO"{
+		//Significa que tengo que autenticarme
+		log.Println("No estas autenticado, tenes que logearte")
+		fmt.Fprintf(w,"Porfavor vaya al localhost:8080/ para que se autentique")
+	}else{
+		log.Println("Estas logeado!")
+		log.Println("[GET] - Solicitando servicio list")
+	
+		resultado := googleDrive.List()
+		json.NewEncoder(w).Encode(resultado)
+	}
+}
+
+
+
 // GET 
 func GetSearchInDocHandler(w http.ResponseWriter , r *http.Request){
 	estado := autenticador.GetEstadoAutenticacion()
@@ -115,7 +134,8 @@ func main() {
 	r.HandleFunc("/oauth", OauthHandler).Methods("GET")
 	r.HandleFunc("/search-in-doc/{id}", GetSearchInDocHandler).Methods("GET")
 	r.HandleFunc("/file", PostCreatFileHandler).Methods("POST")
-	
+	r.HandleFunc("/list", GetListHandler).Methods("GET")
+
 	//Podemos crear nuestro servidor a mano, asi lo podemos customizar mejor
 	server := &http.Server{
 			Addr:			":8080",

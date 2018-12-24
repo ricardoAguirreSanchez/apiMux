@@ -11,7 +11,7 @@ import (
         "golang.org/x/net/context"
         "golang.org/x/oauth2"
         "golang.org/x/oauth2/google"
-        "google.golang.org/api/drive/v3"
+        "google.golang.org/api/drive/v2"
 )
 
 // Recupera el token, lo guarda y devuelve el cliente generado
@@ -72,41 +72,41 @@ func saveToken(path string, token *oauth2.Token) {
         json.NewEncoder(f).Encode(token)
 }
 
-func logearme(){//Se escribe en mayuscula por ser publico
-	b, err := ioutil.ReadFile("credentials.json")
-	if err != nil {
-			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
-	}
+// func logearme(){//Se escribe en mayuscula por ser publico
+// 	b, err := ioutil.ReadFile("credentials.json")
+// 	if err != nil {
+// 			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
+// 	}
 
-	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
-	if err != nil {
-			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
-	}
-	client := getClient(config) //este vera si tiene que redirigirlo a la web o tiene el token precargado
+// 	// If modifying these scopes, delete your previously saved token.json.
+// 	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
+// 	if err != nil {
+// 			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
+// 	}
+// 	client := getClient(config) //este vera si tiene que redirigirlo a la web o tiene el token precargado
 
 	
-	//logica para usar el drive
-	srv, err := drive.New(client)
-	if err != nil {
-			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
-	}
+// 	//logica para usar el drive
+// 	srv, err := drive.New(client)
+// 	if err != nil {
+// 			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
+// 	}
 
-	//srv.Files *FilesService -> r *FilesListCall
-	r, err := srv.Files.List().PageSize(10).
-			Fields("nextPageToken, files(id, name)").Do()
-	if err != nil {
-			log.Fatalf("No se pudo recuperar los archivos: %v", err)
-	}
-	fmt.Println("Archivos:")
-	if len(r.Files) == 0 {
-			fmt.Println("No tiene archivos.")
-	} else {
-			for _, i := range r.Files {
-					fmt.Printf("%s (%s)\n", i.Name, i.Id)
-			}
-	}
-}
+// 	//srv.Files *FilesService -> r *FilesListCall
+// 	r, err := srv.Files.List().PageSize(10).
+// 			Fields("nextPageToken, files(id, name)").Do()
+// 	if err != nil {
+// 			log.Fatalf("No se pudo recuperar los archivos: %v", err)
+// 	}
+// 	fmt.Println("Archivos:")
+// 	if len(r.Files) == 0 {
+// 			fmt.Println("No tiene archivos.")
+// 	} else {
+// 			for _, i := range r.Files {
+// 					fmt.Printf("%s (%s)\n", i.Name, i.Id)
+// 			}
+// 	}
+// }
 
 //Funcion que me avisa si estoy autenticado o me da la url para hacerlo
 func GetEstadoAutenticacion() string{//Se escribe en mayuscula por ser publico
