@@ -64,8 +64,8 @@ func List() ListDocument{
 			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
 	}
 
-	//srv.Files *FilesService -> r *FilesListCall
-	r, err := srv.Files.List().MaxResults(10).Do()
+	//Q("mimeType='application/pdf' and name contains 'myfile' and trashed=false")
+	r, err := srv.Files.List().MaxResults(10).Q("trashed=false").Do()
 	if err != nil {
 			log.Fatalf("No se pudo recuperar los archivos: %v", err)
 	}
