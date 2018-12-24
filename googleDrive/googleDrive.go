@@ -22,7 +22,7 @@ PD: es necesario dejar los metodos con MAYUSCULA para que sean publicos
 type Documento struct{  //los atributos publicos
 	Id string `json:"id"`
 	Titulo string `json:"titulo"`
-	Contenido string `json:"contenido"`
+	Descripcion string `json:"descripcion"`
 }
 
 type ListDocument []DocumentoMeta
@@ -99,8 +99,6 @@ func SerchInDocument(id string,word string) string{
 	tok, err := tokenFromFile(tokFile)
 	client := config.Client(context.Background(), tok)
 	
-
-	//-----------------Busca el documento-------------------//
 	srv, err := drive.New(client)
 	if err != nil {
 			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
@@ -108,6 +106,7 @@ func SerchInDocument(id string,word string) string{
 	}
 	log.Println("Drive recuperado")
 	
+	//-----------------Busca el documento-------------------//
 	r, err := srv.Files.Get(id).Do()
 	if err != nil {
 			log.Fatalf("No se pudo recuperar el archivo buscado, Error : %v", err)
@@ -149,7 +148,7 @@ func DownloadAndReadFile(t http.RoundTripper, f *drive.File) (string, error) {
 	  return "", err
 	}
 	resp, err := t.RoundTrip(req)
-	// Make sure we close the Body later
+	// Si o si, luego del return o que explote, con defer ejecuta close siempre
 	defer resp.Body.Close()
 	if err != nil {
 		log.Printf("An error occurred: %v\n", err)
@@ -172,50 +171,73 @@ func DownloadAndReadFile(t http.RoundTripper, f *drive.File) (string, error) {
 
 //https://gist.github.com/atotto/86fa30668473b41eeac7d750e5ad5f5c
 //https://stackoverflow.com/questions/46334646/google-drive-api-v3-create-and-upload-file
+//Crea un archivo .txt con el contenido mandabo
 func CreateFile(documentoACrear Documento) Documento{
 		
-	log.Println("CONSULTO la API GOOGLE DRIVE PARA CREAR DOCUMENTO DE Titulo: " + documentoACrear.Titulo + " Y Contenido: " + documentoACrear.Contenido)
+	log.Println("CONSULTO la API GOOGLE DRIVE PARA CREAR DOCUMENTO DE Titulo: " + documentoACrear.Titulo + " Y Contenido: " + documentoACrear.Descripcion)
 	
 	//----------------Busca las credenciales----------------------//
-	// b, err := ioutil.ReadFile("credentials.json")
-	// if err != nil {
-	// 		log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
-	// }
-	// log.Println("Buscando credenciales")
-	// config, err := google.ConfigFromJSON(b, drive.DriveScope)
-	// if err != nil {
-	// 		log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
-	// }
+	b, err := ioutil.ReadFile("credentials.json")
+	if err != nil {
+			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
+	}
+	log.Println("Buscando credenciales")
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
+	if err != nil {
+			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
+	}
 
-	// tokFile := "token.json"
-	// tok, err := tokenFromFile(tokFile)
-	// client := config.Client(context.Background(), tok)
-	//--------------------------------------------------------//
+	tokFile := "token.json"
+	tok, err := tokenFromFile(tokFile)
+	client := config.Client(context.Background(), tok)
 
-	documentoNuevo := Documento{"DFEEWEFSEE34FF",documentoACrear.Titulo,documentoACrear.Contenido}
+	srv, err := drive.New(client)
+	if err != nil {
+			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
+			return Documento{"DFEEWEFSEE34FF","default","default"}
+	}
+	log.Println("Drive recuperado")
+
+	//----------------------Insertamos el doc.txt------------------------------------//
 	
-	// srv, err := drive.New(client)
-	// if err != nil {
-	// 		log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
-	// 		return documentoNuevo
-	// }
-	// log.Println("Drive recuperado")
+	fileCreado,err := InsertFile(srv,documentoACrear.Titulo,documentoACrear.Descripcion,"","text/plain",documentoACrear.Titulo)
 
-	// //1.- generamos un Id
-	// genereateId, err := srv.Files.GenerateIds().Do()
-	// if err != nil {
-	// 		log.Fatalf("No se pudo generar el id %v",err)
-	// 		return documentoNuevo
-	// }
-	// //2.- armamos el *file
-	// id := genereateId.Ids[0]
-	// log.Println("Generamos el id: %s",id)
-	// //3.- guardamos el *file
-
+	if err != nil {
+		log.Fatalf("No se pudo insertar el archivo en el drive del cliente: %v", err)
+		return Documento{"DFEEWEFSEE34FF","default","default"}
+	}
+	
+	documentoNuevo := Documento{fileCreado.Id,documentoACrear.Titulo,documentoACrear.Descripcion}
 	return documentoNuevo
 }
 
+func InsertFile(d *drive.Service, title string, description string,parentId string, mimeType string, filename string) (*drive.File, error) {
+	//creo un .txt con ese contenido 
 
+
+	//inserto el .txt en drive
+
+	
+	//borro el .txt local
+
+	//   m, err := os.Open(filename)
+//   if err != nil {
+//     log.Printf("An error occurred: %v\n", err)
+//     return nil, err
+//   }
+	f := &drive.File{Title: title, Description: description, MimeType: mimeType}
+  	if parentId != "" {
+    	p := &drive.ParentReference{Id: parentId}
+    	f.Parents = []*drive.ParentReference{p}
+  	}
+//   r, err := d.Files.Insert(f).Media(m).Do()
+  	r, err := d.Files.Insert(f).Do()
+  	if err != nil {
+    	log.Printf("Error tratando de insertar el archivo: %v\n", err)
+    	return nil, err
+  	}
+  	return r, nil
+}
 
 // Busca el token del archivo
 func tokenFromFile(file string) (*oauth2.Token, error) {
