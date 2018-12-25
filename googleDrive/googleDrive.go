@@ -64,7 +64,7 @@ func List() ListDocument{
 	}
 
 	//Q("mimeType='application/pdf' and name contains 'myfile' and trashed=false")
-	r, err := srv.Files.List().MaxResults(10).Q("trashed=false").Do()
+	r, err := srv.Files.List().MaxResults(10).Q("trashed=false and ( mimeType='application/pdf' or mimeType='text/plain')").Do()
 	if err != nil {
 			log.Println("No se pudo recuperar los archivos: ", err)
 			return resultado
