@@ -77,14 +77,15 @@ func GetEstadoAutenticacion() string{//Se escribe en mayuscula por ser publico
         b, err := ioutil.ReadFile("credentials.json")
         if err != nil {
                 log.Printf("No se pudo leer el archivo credentials.json : %v", err)
+                return "ERROR"
         }
 
         // If modifying these scopes, delete your previously saved token.json.
         config, err := google.ConfigFromJSON(b, drive.DriveScope)
         if err != nil {
                 log.Printf("No se puede analizar el 'client secret file' para configurar: %v", err)
+                return "ERROR"
         }
-		
 		tokFile := "token.json"
 		tok, err := tokenFromFile(tokFile)
 		if err != nil {

@@ -41,12 +41,14 @@ func List() ListDocument{
 	//----------------Busca las credenciales----------------------//
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
-			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
+			log.Println("No se pudo leer el archivo credentials.json : ", err)
+			return resultado
 	}
 	log.Println("Buscando credenciales")
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
+			log.Println("No se puede analizar el 'client secret file' para configurar: ", err)
+			return resultado
 	}
 	
 	tokFile := "token.json"
@@ -57,17 +59,20 @@ func List() ListDocument{
 	//Busca el documento
 	srv, err := drive.New(client)
 	if err != nil {
-			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
+			log.Println("No se pudo recuperar el drive del cliente: ", err)
+			return resultado
 	}
 
 	//Q("mimeType='application/pdf' and name contains 'myfile' and trashed=false")
 	r, err := srv.Files.List().MaxResults(10).Q("trashed=false").Do()
 	if err != nil {
-			log.Fatalf("No se pudo recuperar los archivos: %v", err)
+			log.Println("No se pudo recuperar los archivos: ", err)
+			return resultado
 	}
 	log.Println("Archivos:")
 	if len(r.Items) == 0 {
 		log.Println("No tiene archivos.")
+		return resultado
 	} else {
 			for _, i := range r.Items {
 				log.Printf("Id:%s Title:%s Mimetype:%s CreatedDate:%s WebContentLink:%s\n", i.Id, i.Title,i.MimeType,i.CreatedDate,i.WebContentLink)
@@ -85,12 +90,14 @@ func SerchInDocument(id string,word string) string{
 	//----------------Busca las credenciales----------------------//
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
-			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
+			log.Println("No se pudo leer el archivo credentials.json : ", err)
+			return "No se pudo leer el archivo credentials.json"
 	}
 	log.Println("Buscando credenciales")
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
+			log.Println("No se puede analizar el 'client secret file' para configurar: ", err)
+			return "No se puede analizar el 'client secret file'"
 	}
 	
 	tokFile := "token.json"
@@ -99,16 +106,16 @@ func SerchInDocument(id string,word string) string{
 	
 	srv, err := drive.New(client)
 	if err != nil {
-			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
-			return "No encontrado!"
+			log.Println("No se pudo recuperar el drive del cliente: ", err)
+			return "No existe el documento con ese ID"
 	}
 	log.Println("Drive recuperado")
 	
 	//-----------------Busca el documento-------------------//
 	r, err := srv.Files.Get(id).Do()
 	if err != nil {
-			log.Fatalf("No se pudo recuperar el archivo buscado, Error : %v", err)
-			return "No encontrado!"
+			log.Println("No se pudo recuperar el archivo buscado, Error : ", err)
+			return "No se pudo obtener el archivo buscado"
 	}
 
 	//-----Descargamos y leemos el documento buscado---------------//
@@ -116,6 +123,7 @@ func SerchInDocument(id string,word string) string{
 	contenido,err := utils.DownloadAndReadFile(round , r)
 	if err != nil {
 		log.Printf("Error al descargar el archivo: %v\n", err)
+		return "Error al descargar el archivo"
 	}else{
 		log.Printf("Descarga y lectura realizado correctamente....")
 	}
@@ -132,19 +140,21 @@ func SerchInDocument(id string,word string) string{
 }
 
 // POST (Obs:Crea un archivo .txt con el contenido mandado)
-func CreateFile(documentoACrear Documento) Documento{
+func CreateFile(documentoACrear Documento) (Documento,string){
 		
 	log.Println("CONSULTO la API GOOGLE DRIVE PARA CREAR DOCUMENTO DE Titulo: " + documentoACrear.Titulo + " Y Contenido: " + documentoACrear.Contenido)
 	
 	//Busca las credenciales
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
-			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
+			log.Println("No se pudo leer el archivo credentials.json : ", err)
+			return Documento{"","",""},"No se pudo crear - Motivo: No se pudo leer el archivo credentials.json"
 	}
 	log.Println("Buscando credenciales")
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
+			log.Println("No se puede analizar el 'client secret file' para configurar: ", err)
+			return Documento{"","",""},"No se pudo crear - Motivo: No se puede analizar el 'client secret file'"
 	}
 
 	tokFile := "token.json"
@@ -153,8 +163,8 @@ func CreateFile(documentoACrear Documento) Documento{
 
 	srv, err := drive.New(client)
 	if err != nil {
-			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
-			return Documento{"DFEEWEFSEE34FF","default","default"}
+			log.Println("No se pudo recuperar el drive del cliente: ", err)
+			return Documento{"","",""},"No se pudo crear - Motivo: No se pudo recuperar el drive del cliente"
 	}
 	log.Println("Drive recuperado")
 
@@ -163,11 +173,11 @@ func CreateFile(documentoACrear Documento) Documento{
 	fileCreado,err := utils.InsertFileInDrive(srv,documentoACrear.Titulo,documentoACrear.Contenido,"","text/plain",documentoACrear.Titulo)
 
 	if err != nil {
-		log.Fatalf("No se pudo insertar el archivo en el drive del cliente: %v", err)
-		return Documento{"DFEEWEFSEE34FF","default","default"}
+		log.Println("No se pudo insertar el archivo en el drive del cliente: ", err)
+		return Documento{"","",""},"No se pudo crear - Motivo: No se pudo insertar el archivo en el drive"
 	}
 	
 	documentoNuevo := Documento{fileCreado.Id,documentoACrear.Titulo,documentoACrear.Contenido}
-	return documentoNuevo
+	return documentoNuevo,"OK"
 }
 

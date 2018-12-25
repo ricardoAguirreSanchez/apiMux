@@ -54,13 +54,22 @@ func GetListHandler(w http.ResponseWriter , r *http.Request){
 	if estado != "AUTENTICADO"{
 		//Significa que tengo que autenticarme
 		log.Println("No estas autenticado, tenes que logearte")
-		fmt.Fprintf(w,"Porfavor vaya al localhost:8080/ para que se autentique")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Porfavor vaya al localhost:8080/ para que se autentique")
+
 	}else{
 		log.Println("Estas logeado!")
 		log.Println("[GET] - Solicitando servicio list")
 	
 		resultado := googleDrive.List()
-		json.NewEncoder(w).Encode(resultado)
+		if len(resultado) > 0 {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(resultado)
+		}else{
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(w,"No se pudo obtener los archivos dentro del drive.")
+		}
+		
 	}
 }
 
@@ -72,7 +81,8 @@ func GetSearchInDocHandler(w http.ResponseWriter , r *http.Request){
 	if estado != "AUTENTICADO"{
 		//Significa que tengo que autenticarme
 		log.Println("No estas autenticado, tenes que logearte")
-		fmt.Fprintf(w,"Porfavor vaya al localhost:8080/ para que se autentique")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Porfavor vaya al localhost:8080/ para que se autentique")
 	}else{
 		log.Println("Estas logeado!")
 		log.Println("[GET] - Solicitando servicio searchInDoc")
@@ -89,7 +99,17 @@ func GetSearchInDocHandler(w http.ResponseWriter , r *http.Request){
 		}else{
 			word := words[0]
 			resultado := googleDrive.SerchInDocument(id,word)
-			fmt.Fprintf(w,resultado)
+			if resultado == "Encontrado!"{
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprintf(w,resultado)
+			}else if resultado == "No encontrado!"{
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprintf(w,resultado)
+			}else{
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w,resultado)
+			}
+			
 		}
 	}
 }
@@ -99,19 +119,35 @@ func PostCreatFileHandler(w http.ResponseWriter , r *http.Request){
 	estado := autenticador.GetEstadoAutenticacion()
 	if estado != "AUTENTICADO"{
 		//Significa que tengo que autenticarme
-		fmt.Fprintf(w,"Porfavor vaya al localhost:8080/ para que se autentique")
+		log.Println("No estas autenticado, tenes que logearte")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Porfavor vaya al localhost:8080/ para que se autentique")
 	}else{
 		log.Println("[POST] - Solicitando servicio file")
 		var documento googleDrive.Documento
 		
-		//decodificamos el json recibio a un objeto documento
+		//decodificamos el json recibio (request) a un objeto documento
 		error := json.NewDecoder(r.Body).Decode(&documento)
 		if error != nil {
-			log.Fatalf("[POST] - Error decodificando json en Solicitando servicio file")
-			fmt.Fprintf(w,"Error al tratar de decodificar el json")
+			log.Println("[POST] - Error decodificando json en Solicitando servicio file")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(w,"Error en los parametros enviados")
 		}else{
-			resultado := googleDrive.CreateFile(documento)
-			json.NewEncoder(w).Encode(resultado)
+
+			if documento.Titulo == "" || documento.Contenido == "" {
+				log.Println("[POST] - Error decodificando json en Solicitando servicio file")
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprintf(w,"Error en los parametros enviados")
+			}else{
+				resultado,status := googleDrive.CreateFile(documento)
+				if status != "OK"{
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(status)
+				} else{
+					w.WriteHeader(http.StatusOK)
+					json.NewEncoder(w).Encode(resultado)
+				}
+			}
 		}
 	}
 	
