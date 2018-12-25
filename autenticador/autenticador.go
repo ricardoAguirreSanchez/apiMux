@@ -38,12 +38,12 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 
         var authCode string
         if _, err := fmt.Scan(&authCode); err != nil {
-                log.Fatalf("No se pudo leer el codigo de autorizacion %v", err)
+                log.Printf("No se pudo leer el codigo de autorizacion %v", err)
         }
 
         tok, err := config.Exchange(context.TODO(), authCode)
         if err != nil {
-                log.Fatalf("No se pudo recuperar el token de la web %v", err)
+                log.Printf("No se pudo recuperar el token de la web %v", err)
         }
         return tok
 }
@@ -66,59 +66,23 @@ func saveToken(path string, token *oauth2.Token) {
 		
         f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
         if err != nil {
-                log.Fatalf("Unable to cache oauth token: %v", err)
+                log.Printf("Unable to cache oauth token: %v", err)
         }
         defer f.Close()
         json.NewEncoder(f).Encode(token)
 }
 
-// func logearme(){//Se escribe en mayuscula por ser publico
-// 	b, err := ioutil.ReadFile("credentials.json")
-// 	if err != nil {
-// 			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
-// 	}
-
-// 	// If modifying these scopes, delete your previously saved token.json.
-// 	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
-// 	if err != nil {
-// 			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
-// 	}
-// 	client := getClient(config) //este vera si tiene que redirigirlo a la web o tiene el token precargado
-
-	
-// 	//logica para usar el drive
-// 	srv, err := drive.New(client)
-// 	if err != nil {
-// 			log.Fatalf("No se pudo recuperar el drive del cliente: %v", err)
-// 	}
-
-// 	//srv.Files *FilesService -> r *FilesListCall
-// 	r, err := srv.Files.List().PageSize(10).
-// 			Fields("nextPageToken, files(id, name)").Do()
-// 	if err != nil {
-// 			log.Fatalf("No se pudo recuperar los archivos: %v", err)
-// 	}
-// 	fmt.Println("Archivos:")
-// 	if len(r.Files) == 0 {
-// 			fmt.Println("No tiene archivos.")
-// 	} else {
-// 			for _, i := range r.Files {
-// 					fmt.Printf("%s (%s)\n", i.Name, i.Id)
-// 			}
-// 	}
-// }
-
 //Funcion que me avisa si estoy autenticado o me da la url para hacerlo
 func GetEstadoAutenticacion() string{//Se escribe en mayuscula por ser publico
         b, err := ioutil.ReadFile("credentials.json")
         if err != nil {
-                log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
+                log.Printf("No se pudo leer el archivo credentials.json : %v", err)
         }
 
         // If modifying these scopes, delete your previously saved token.json.
         config, err := google.ConfigFromJSON(b, drive.DriveScope)
         if err != nil {
-                log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
+                log.Printf("No se puede analizar el 'client secret file' para configurar: %v", err)
         }
 		
 		tokFile := "token.json"
@@ -143,13 +107,15 @@ func Autenticar(code string) string{//Se escribe en mayuscula por ser publico
 	log.Println("Empezamos a autenticar...")
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
-			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
+                log.Printf("No se pudo leer el archivo credentials.json : %v", err)
+                return "ERROR"
 	}
 
 	//BUsca la configuracion
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-			log.Fatalf("No se puede analizar el 'client secret file' para configurar: %v", err)
+                log.Printf("No se puede analizar el 'client secret file' para configurar: %v", err)
+                return "ERROR"
 	}
 
 	tokFile := "token.json"
@@ -158,7 +124,7 @@ func Autenticar(code string) string{//Se escribe en mayuscula por ser publico
 		//Si no lo tengo, hay que cargar el token desde la web
 		tokAux, errAux := config.Exchange(context.TODO(), code)
 		if errAux != nil {
-			log.Fatalf("No se pudo recuperar el token de la web %v", errAux)
+			log.Printf("No se pudo recuperar el token de la web %v", errAux)
 			return "ERROR"
 		}
 		tok = tokAux
@@ -166,7 +132,7 @@ func Autenticar(code string) string{//Se escribe en mayuscula por ser publico
 		return "OK"
 	}else{
 		//el token ya lo tenemos!!!!!
-		log.Fatalf("Esto no se deberia var ya que en teoria no estoy autenticado aun.")
+		log.Printf("Esto no se deberia var ya que en teoria no estoy autenticado aun.")
 		return "ERROR"
 	}
 	

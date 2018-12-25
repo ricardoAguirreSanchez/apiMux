@@ -50,7 +50,6 @@ func DownloadAndReadFile(t http.RoundTripper, f *drive.File) (string, error) {
 		log.Printf("El doc a analizar es un application/pdf...")
 		path := f.Title
 		stri := string(body)
-		
 		CreateAndWriteFile(path,stri)
 		
 		content,err := ReadPdf(path)//hay que cambiar el binario a texto ya que es .pdf
