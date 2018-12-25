@@ -11,7 +11,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
-		
+	
+	"bytes"
+	"github.com/ledongthuc/pdf"
 )
 
 /*
@@ -121,10 +123,11 @@ func SerchInDocument(id string,word string) string{
 	if err != nil {
 		log.Printf("Error al descargar el archivo: %v\n", err)
 	}else{
-		log.Printf("Descargado y lectura realizado correctamente....")
+		log.Printf("Descarga y lectura realizado correctamente....")
 	}
 
 	//-----Controlamos si existe el word en el contenido
+	log.Printf("Revisamos el contenido....")
 	if strings.Contains(contenido, word){
 		log.Println("Existe la palabra en el contenido!")
 		return "Encontrado!"
@@ -134,12 +137,12 @@ func SerchInDocument(id string,word string) string{
 	}
 }
 
-// POST (Obs:Crea un archivo .txt con el contenido mandabo)
+// POST (Obs:Crea un archivo .txt con el contenido mandado)
 func CreateFile(documentoACrear Documento) Documento{
 		
 	log.Println("CONSULTO la API GOOGLE DRIVE PARA CREAR DOCUMENTO DE Titulo: " + documentoACrear.Titulo + " Y Contenido: " + documentoACrear.Contenido)
 	
-	//----------------Busca las credenciales----------------------//
+	//Busca las credenciales
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
 			log.Fatalf("No se pudo leer el archivo credentials.json : %v", err)
@@ -161,7 +164,7 @@ func CreateFile(documentoACrear Documento) Documento{
 	}
 	log.Println("Drive recuperado")
 
-	//----------------------Insertamos el doc.txt------------------------------------//
+	//Insertamos el doc.txt
 	
 	fileCreado,err := insertFileInDrive(srv,documentoACrear.Titulo,documentoACrear.Contenido,"","text/plain",documentoACrear.Titulo)
 
@@ -174,56 +177,89 @@ func CreateFile(documentoACrear Documento) Documento{
 	return documentoNuevo
 }
 
-//------------------------Privados------------------------------
+//------------------------------------Privados--------------------------------//
 
 //Permite descargar y leer archivos .txt y .pdf
 func downloadAndReadFile(t http.RoundTripper, f *drive.File) (string, error) {
 	
 	downloadUrl := f.DownloadUrl
 	if downloadUrl == "" {
-	  // If there is no downloadUrl, there is no body
-	  log.Printf("An error occurred: File is not downloadable")
+	  log.Printf("downloadUrl esta vacio!")
 	  return "", nil
 	}
+	log.Printf("downloadUrl: %s",downloadUrl)
 	req, err := http.NewRequest("GET", downloadUrl, nil)
 	if err != nil {
-		log.Printf("An error occurred: %v\n", err)
+		log.Printf("Error al ejecuar NewRequest: %v\n", err)
 	  return "", err
 	}
 	resp, err := t.RoundTrip(req)
 	// Si o si, luego del return o que explote, con defer ejecuta close siempre
 	defer resp.Body.Close()
 	if err != nil {
-		log.Printf("An error occurred: %v\n", err)
+		log.Printf("Error al ejecutar RoundTrip: %v\n", err)
 	  return "", err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("An error occurred: %v\n", err)
+		log.Printf("Error al ejecutar ReadAll: %v\n", err)
 	  return "", err
 	}
 
 	if strings.Contains(f.MimeType,"text/plain"){
+		log.Printf("El doc a analizar es un text/plain...")
 		return string(body), nil
+	}else if strings.Contains(f.MimeType,"application/pdf"){
+		log.Printf("El doc a analizar es un application/pdf...")
+		path := f.Title
+		stri := string(body)
+		
+		createAndWriteFile(path,stri)
+		
+		content,err := readPdf(path)//hay que cambiar el binario a texto ya que es .pdf
+		if err != nil{
+			log.Println("Error al ejecutar readPdf: ",err)
+		}
+		log.Println("Documento pdf leido correctamente con readPdf")
+
+		deleteFile(path)
+		return content, nil
 	}else{
-		//hay que cambiar el binario a texto ya que es .pdf
+		//es otro tipo de archivo, no lo podemos analizar
+		log.Println("El doc a analizar no es ni un text ni pdf")
 		return "", nil
 	}
+}
+
+//libreria externa para poder leer archivos .pdf
+func readPdf(path string) (string, error) {
+	f, r, err := pdf.Open(path)
+	defer f.Close()
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+    b, err := r.GetPlainText()
+    if err != nil {
+        return "", err
+    }
+    buf.ReadFrom(b)
+	return buf.String(), nil
 }
 
 //realiza todo el flujo para poder insertar un doc en drive
 func insertFileInDrive(d *drive.Service, title string, contenido string,parentId string, mimeType string, filename string) (*drive.File, error) {
 	
-	path := title + ".txt"
+	//path := title + ".txt"
 
 	//creo un .txt con ese contenido 
-	createAndWriteFile(path,contenido)
+	createAndWriteFile(title,contenido)
 
 	//inserto el .txt en drive
-	r := subirInDrive(d, title, contenido,parentId, mimeType , path)
+	r := subirInDrive(d, title, contenido,parentId, mimeType , title)
 
 	//borro el .txt local
-	deleteFile(path)
+	deleteFile(title)
 	
 	return r,nil
 }
