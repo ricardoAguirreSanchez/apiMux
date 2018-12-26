@@ -10,11 +10,6 @@ import (
 	"./googleDrive"
 	"./autenticador"
 	"os"
-
-    // "golang.org/x/net/context"
-    // "golang.org/x/oauth2"
-    // "golang.org/x/oauth2/google"
-    // "google.golang.org/api/drive/v3"
 )
 
 // INDEX
